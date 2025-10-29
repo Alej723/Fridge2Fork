@@ -1,0 +1,46 @@
+.grocery-list {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.grocery-sections {
+  display: grid;
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.grocery-section {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.grocery-section h3 {
+  margin-bottom: 1rem;
+  color: #4CAF50;
+}
+
+.grocery-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.grocery-section li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.print-btn {
+  padding: 1rem 2rem;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
