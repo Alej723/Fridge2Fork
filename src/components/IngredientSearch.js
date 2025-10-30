@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './IngredientSearch.css';
 
-const IngredientSearch = ({ onAddToMealPlan }) => {
+const IngredientSearch = ({ onAddToMealPlan, setUserIngredients }) => {
   const [ingredientInput, setIngredientInput] = useState('');
   const [ingredients, setIngredients] = useState([]);
   const [recipes, setRecipes] = useState([]);
@@ -14,13 +14,17 @@ const IngredientSearch = ({ onAddToMealPlan }) => {
 
   const addIngredient = () => {
     if (ingredientInput.trim() && !ingredients.includes(ingredientInput.trim())) {
-      setIngredients([...ingredients, ingredientInput.trim()]);
+      const newIngredients = [...ingredients, ingredientInput.trim()];
+      setIngredients(newIngredients);
+      setUserIngredients(newIngredients);
       setIngredientInput('');
     }
   };
 
   const removeIngredient = (ingredientToRemove) => {
-    setIngredients(ingredients.filter(ing => ing !== ingredientToRemove));
+    const newIngredients = ingredients.filter(ing => ing !== ingredientToRemove);
+    setIngredients(newIngredients);
+    setUserIngredients(newIngredients);
   };
 
   const handleSearch = async () => {
@@ -33,18 +37,106 @@ const IngredientSearch = ({ onAddToMealPlan }) => {
         {
           params: {
             ingredients: ingredients.join(','),
-            number: 9,
+            number: 6, // Reduced this to save on API calls
             apiKey: API_KEY,
             ranking: 2
           }
         }
       );
-      setRecipes(response.data);
+      
+      // Get detailed information for each recipe
+      const detailedRecipes = await Promise.all(
+        response.data.map(async (recipe) => {
+          try {
+            const detailResponse = await axios.get(
+              `https://api.spoonacular.com/recipes/${recipe.id}/information`,
+              {
+                params: {
+                  apiKey: API_KEY
+                }
+              }
+            );
+            return {
+              ...recipe,
+              extendedIngredients: detailResponse.data.extendedIngredients || [],
+              instructions: detailResponse.data.instructions,
+              readyInMinutes: detailResponse.data.readyInMinutes
+            };
+          } catch (error) {
+            console.error(`Error fetching details for recipe ${recipe.id}:`, error);
+            return {
+              ...recipe,
+              extendedIngredients: [],
+              instructions: '',
+              readyInMinutes: 0
+            };
+          }
+        })
+      );
+      
+      setRecipes(detailedRecipes);
     } catch (error) {
       console.error('Error fetching recipes:', error);
       alert('Failed to fetch recipes. Please try again.');
     }
     setLoading(false);
+  };
+
+  // Add demo recipes as fallback
+  const getDemoRecipes = () => {
+    return [
+      {
+        id: 1,
+        title: "Chicken and Rice",
+        image: "https://spoonacular.com/recipeImages/1-312x231.jpg",
+        usedIngredientCount: 2,
+        missedIngredientCount: 3,
+        extendedIngredients: [
+          { id: 1, name: "chicken", original: "1 chicken breast" },
+          { id: 2, name: "rice", original: "1 cup rice" },
+          { id: 3, name: "broccoli", original: "1 cup broccoli" },
+          { id: 4, name: "soy sauce", original: "2 tbsp soy sauce" },
+          { id: 5, name: "garlic", original: "2 cloves garlic" }
+        ],
+        instructions: "<ol><li>Cook rice according to package instructions</li><li>Season chicken and cook until done</li><li>Steam broccoli</li><li>Combine everything and serve</li></ol>"
+      },
+      {
+        id: 2,
+        title: "Pasta with Tomato Sauce",
+        image: "https://spoonacular.com/recipeImages/2-312x231.jpg",
+        usedIngredientCount: 1,
+        missedIngredientCount: 4,
+        extendedIngredients: [
+          { id: 6, name: "pasta", original: "200g pasta" },
+          { id: 7, name: "tomato sauce", original: "1 cup tomato sauce" },
+          { id: 8, name: "cheese", original: "1/2 cup grated cheese" },
+          { id: 9, name: "basil", original: "Fresh basil leaves" },
+          { id: 10, name: "olive oil", original: "1 tbsp olive oil" }
+        ],
+        instructions: "<ol><li>Cook pasta al dente</li><li>Heat tomato sauce</li><li>Combine pasta with sauce</li><li>Top with cheese and basil</li></ol>"
+      }
+    ];
+  };
+
+  // Analyze which ingredients user has vs needs
+  const analyzeIngredients = (recipe, userIngredients) => {
+    const userIngredientLower = userIngredients.map(ing => ing.toLowerCase());
+    
+    const hasIngredients = recipe.extendedIngredients.filter(ing => 
+      userIngredientLower.some(userIng => 
+        ing.name.toLowerCase().includes(userIng) || 
+        userIng.includes(ing.name.toLowerCase())
+      )
+    );
+    
+    const missingIngredients = recipe.extendedIngredients.filter(ing => 
+      !userIngredientLower.some(userIng => 
+        ing.name.toLowerCase().includes(userIng) || 
+        userIng.includes(ing.name.toLowerCase())
+      )
+    );
+    
+    return { hasIngredients, missingIngredients };
   };
 
   const popularIngredients = [
@@ -55,29 +147,20 @@ const IngredientSearch = ({ onAddToMealPlan }) => {
 
   const addPopularIngredient = (ingredient) => {
     if (!ingredients.includes(ingredient)) {
-      setIngredients([...ingredients, ingredient]);
+      const newIngredients = [...ingredients, ingredient];
+      setIngredients(newIngredients);
+      setUserIngredients(newIngredients);
     }
   };
 
-  // Add this function to handle adding to meal planner
   const addToMealPlan = (recipe, event) => {
     event.stopPropagation();
     if (onAddToMealPlan) {
       onAddToMealPlan(recipe);
-      alert(`Added "${recipe.title}" to your meal plan!`);
+      alert(`"${recipe.title}" added to meal plan! Go to Planner to organize.`);
     }
   };
 
-  // Also update the modal button:
-  const addToMealPlanFromModal = () => {
-    if (onAddToMealPlan && selectedRecipe) {
-      onAddToMealPlan(selectedRecipe);
-      setShowRecipeDetail(false);
-      alert(`Added "${selectedRecipe.title}" to your meal plan!`);
-    }
-  };
-
-  // Add this function to show recipe details
   const showRecipeDetails = (recipe) => {
     setSelectedRecipe(recipe);
     setShowRecipeDetail(true);
@@ -157,33 +240,61 @@ const IngredientSearch = ({ onAddToMealPlan }) => {
         <div className="recipe-results-section">
           <h3>Found {recipes.length} Recipes</h3>
           <div className="recipe-grid">
-            {recipes.map(recipe => (
-              <div 
-                key={recipe.id} 
-                className="recipe-card"
-                onClick={() => showRecipeDetails(recipe)}
-              >
-                <div className="recipe-image">
-                  <img src={recipe.image} alt={recipe.title} />
-                  <div className="recipe-stats">
-                    <span className="used">✅ {recipe.usedIngredientCount}</span>
-                    <span className="missing">❌ {recipe.missedIngredientCount}</span>
+            {recipes.map(recipe => {
+              const { hasIngredients, missingIngredients } = analyzeIngredients(recipe, ingredients);
+              
+              return (
+                <div 
+                  key={recipe.id} 
+                  className="recipe-card"
+                  onClick={() => showRecipeDetails(recipe)}
+                >
+                  <div className="recipe-image">
+                    <img src={recipe.image} alt={recipe.title} />
+                    <div className="recipe-stats">
+                      <span className="used">✅ {hasIngredients.length}</span>
+                      <span className="missing">❌ {missingIngredients.length}</span>
+                    </div>
+                  </div>
+                  <div className="recipe-info">
+                    <h4>{recipe.title}</h4>
+                    
+                    {/* Show actual ingredients */}
+                    <div className="ingredient-preview">
+                      <div className="has-ingredients">
+                        <strong>You have:</strong>
+                        <div className="ingredient-tags">
+                          {hasIngredients.slice(0, 2).map(ing => (
+                            <span key={ing.id} className="ingredient-tag has">✓ {ing.name}</span>
+                          ))}
+                          {hasIngredients.length > 2 && (
+                            <span className="ingredient-more">+{hasIngredients.length - 2} more</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="needs-ingredients">
+                        <strong>You need:</strong>
+                        <div className="ingredient-tags">
+                          {missingIngredients.slice(0, 2).map(ing => (
+                            <span key={ing.id} className="ingredient-tag needs">+ {ing.name}</span>
+                          ))}
+                          {missingIngredients.length > 2 && (
+                            <span className="ingredient-more">+{missingIngredients.length - 2} more</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      className="add-to-planner"
+                      onClick={(e) => addToMealPlan(recipe, e)}
+                    >
+                      Add to Meal Plan
+                    </button>
                   </div>
                 </div>
-                <div className="recipe-info">
-                  <h4>{recipe.title}</h4>
-                  <div className="recipe-meta">
-                    <span>Uses {recipe.usedIngredientCount} ingredients you have</span>
-                  </div>
-                  <button 
-                    className="add-to-planner"
-                    onClick={(e) => addToMealPlan(recipe, e)}
-                  >
-                    Add to Meal Plan
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -195,11 +306,49 @@ const IngredientSearch = ({ onAddToMealPlan }) => {
             <button className="close-modal" onClick={() => setShowRecipeDetail(false)}>×</button>
             <h2>{selectedRecipe.title}</h2>
             <img src={selectedRecipe.image} alt={selectedRecipe.title} />
+            
             <div className="recipe-details">
-              <p><strong>Uses {selectedRecipe.usedIngredientCount} ingredients you have</strong></p>
-              <p><strong>Needs {selectedRecipe.missedIngredientCount} additional ingredients</strong></p>
+              <div className="detail-section">
+                <h4>Ingredients You Have:</h4>
+                <ul>
+                  {analyzeIngredients(selectedRecipe, ingredients).hasIngredients.map(ing => (
+                    <li key={ing.id}>✓ {ing.original || ing.name}</li>
+                  ))}
+                  {analyzeIngredients(selectedRecipe, ingredients).hasIngredients.length === 0 && (
+                    <li>No matching ingredients</li>
+                  )}
+                </ul>
+              </div>
+              
+              <div className="detail-section">
+                <h4>Ingredients You Need:</h4>
+                <ul>
+                  {analyzeIngredients(selectedRecipe, ingredients).missingIngredients.map(ing => (
+                    <li key={ing.id}>+ {ing.original || ing.name}</li>
+                  ))}
+                </ul>
+              </div>
+              
+              {selectedRecipe.instructions && (
+                <div className="detail-section">
+                  <h4>Instructions:</h4>
+                  <div 
+                    className="instructions" 
+                    dangerouslySetInnerHTML={{ __html: selectedRecipe.instructions }} 
+                  />
+                </div>
+              )}
             </div>
-            <button className="add-to-planner-large" onClick={addToMealPlanFromModal}>Add to Meal Plan</button>
+            
+            <button 
+              className="add-to-planner-large" 
+              onClick={(e) => {
+                addToMealPlan(selectedRecipe, e);
+                setShowRecipeDetail(false);
+              }}
+            >
+              Add to Meal Plan
+            </button>
           </div>
         </div>
       )}

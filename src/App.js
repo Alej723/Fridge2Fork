@@ -11,9 +11,11 @@ import './App.css';
 function App() {
   const [user, setUser] = useState(null);
   const [mealPlan, setMealPlan] = useState({
-    monday: [], tuesday: [], wednesday: [], thursday: [],
-    friday: [], saturday: [], sunday: []
+    sunday: [], monday: [], tuesday: [], wednesday: [], thursday: [],
+    friday: [], saturday: []
   });
+  const [addedToMealPlan, setAddedToMealPlan] = useState([]);
+  const [userIngredients, setUserIngredients] = useState([]);
 
   const handleLogin = (userData) => {
     // In a real app, you'd verify credentials with a backend
@@ -34,17 +36,10 @@ function App() {
     console.log('Saving preferences:', preferences);
   };
 
-  const addRecipeToMealPlan = (recipe, day = null) => {
-    if (!day) {
-      // If no day specified, add to first available day
-      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-      day = days.find(d => mealPlan[d].length === 0) || 'monday';
+  const addRecipeToMealPlan = (recipe) => {
+    if (!addedToMealPlan.find(r => r.id === recipe.id)) {
+      setAddedToMealPlan(prev => [...prev, recipe]);
     }
-    
-    setMealPlan(prev => ({
-      ...prev,
-      [day]: [...prev[day], recipe]
-    }));
   };
 
   return (
@@ -63,12 +58,26 @@ function App() {
             <main className="main-content">
               <Routes>
                 <Route path="/" element={
-                  <IngredientSearch onAddToMealPlan={addRecipeToMealPlan} />
+                  <IngredientSearch 
+                    onAddToMealPlan={addRecipeToMealPlan}
+                    addedToMealPlan={addedToMealPlan}
+                    setAddedToMealPlan={setAddedToMealPlan}
+                    setUserIngredients={setUserIngredients}
+                  />
                 } />
                 <Route path="/planner" element={
-                  <MealPlanner mealPlan={mealPlan} onUpdateMealPlan={setMealPlan} />
+                  <MealPlanner 
+                    mealPlan={mealPlan} 
+                    onUpdateMealPlan={setMealPlan}
+                    addedToMealPlan={addedToMealPlan}
+                  />
                 } />
-                <Route path="/grocery" element={<GroceryList />} />
+                <Route path="/grocery" element={
+                  <GroceryList 
+                    mealPlan={mealPlan}
+                    userIngredients={userIngredients}
+                  />
+                } />
                 <Route path="/profile" element={
                   <Profile 
                     user={user} 
