@@ -29,23 +29,11 @@ body {
   padding: 2rem;
 }
 
-/* Remove or comment out the gradient background */
-/* .App-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="1000,100 1000,0 0,100"/></svg>');
-  background-size: cover;
-} */
-
 .main-title {
   font-size: 3.5rem;
   font-weight: 800;
   margin-bottom: 0.5rem;
-  color: white; /* Change from gradient to solid white */
+  color: white;
 }
 
 .tagline {
@@ -55,25 +43,24 @@ body {
 }
 
 .header-content {
-  position: relative;
-  z-index: 2;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-/* .main-title {
-  font-size: 3.5rem;
+.main-title {
+  font-size: 4.5rem;
   font-weight: 800;
-  margin-bottom: 0.5rem;
-  background: linear-gradient(45deg, #fff, #f8f9fa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  margin-bottom: 1.5rem;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
 }
 
 .tagline {
-  font-size: 1.2rem;
-  opacity: 0.9;
+  font-size: 1.8rem;
+  opacity: 0.95;
+  margin-bottom: 3rem;
+  text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
   font-weight: 300;
-} */
+}
 
 .main-content {
   padding: 2rem;

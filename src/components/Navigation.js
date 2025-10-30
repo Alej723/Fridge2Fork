@@ -8,7 +8,7 @@ const Navigation = () => {
   return (
     <nav className="navigation">
       <div className="nav-brand">
-        <span className="logo">🍴</span>
+        <img src="/Fridge2ForkLogo.png" alt="Fridge2Fork Logo" className="nav-logo" />
         <span className="brand-name">Fridge2Fork</span>
       </div>
       <div className="nav-links">

@@ -47,7 +47,7 @@ function App() {
       <div className="App">
         <header className="App-header">
           <div className="header-content">
-            <h1 className="main-title">🍴 Fridge2Fork</h1>
+            <h1 className="main-title">Fridge2Fork</h1>
             <p className="tagline">Smart meal planning from fridge to fork</p>
           </div>
         </header>
