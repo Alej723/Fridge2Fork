@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './IngredientSearch.css';
 
-const IngredientSearch = ({ onAddToMealPlan, setUserIngredients }) => {
+const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences }) => {
   const [ingredientInput, setIngredientInput] = useState('');
   const [ingredients, setIngredients] = useState([]);
   const [recipes, setRecipes] = useState([]);
@@ -11,6 +11,67 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients }) => {
   const [showRecipeDetail, setShowRecipeDetail] = useState(false);
 
   const API_KEY = '6be7bde14d4549439a1361a567311b2f';
+
+// when we use the prefrences tab and return to the search its ensured that your not allowed certain recipies 
+
+  const filterRecipesByPreferences = (recipesToFilter) => {
+  if (!userPreferences || (userPreferences.dietary.length === 0 && userPreferences.allergies.length === 0 && !userPreferences.otherAllergies)) {
+    return recipesToFilter;
+  }
+
+  return recipesToFilter.filter(recipe => {
+
+    if (userPreferences.dietary.includes('Vegetarian') && !recipe.vegetarian) {
+      return false;
+    }
+    if (userPreferences.dietary.includes('Vegan') && !recipe.vegan) {
+      return false;
+    }
+    if (userPreferences.dietary.includes('Gluten-Free') && !recipe.glutenFree) {
+      return false;
+    }
+    if (userPreferences.dietary.includes('Dairy-Free') && !recipe.dairyFree) {
+      return false;
+    }
+
+
+    const allIngredients = recipe.extendedIngredients
+      ?.map(ing => ing.name?.toLowerCase() || '')
+      .join(' ') || '';
+    
+    const recipeTitle = recipe.title?.toLowerCase() || '';
+    const fullRecipeText = `${allIngredients} ${recipeTitle}`;
+
+    const allergenKeywords = {
+      'Nuts': ['nut', 'almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'hazelnut', 'peanut'],
+      'Shellfish': ['shrimp', 'crab', 'lobster', 'shellfish', 'prawn', 'crawfish'],
+      'Eggs': ['egg'],
+      'Soy': ['soy', 'tofu', 'edamame'],
+      'Wheat': ['wheat', 'flour'],
+      'Fish': ['fish', 'salmon', 'tuna', 'cod', 'tilapia', 'trout']
+    };
+
+    for (const allergen of userPreferences.allergies) {
+      const keywords = allergenKeywords[allergen] || [allergen.toLowerCase()];
+      if (keywords.some(keyword => fullRecipeText.includes(keyword))) {
+        return false;
+      }
+    }
+
+    if (userPreferences.otherAllergies) {
+      const otherAllergens = userPreferences.otherAllergies
+        .split(',')
+        .map(a => a.trim().toLowerCase())
+        .filter(a => a.length > 0);
+      
+      if (otherAllergens.some(allergen => fullRecipeText.includes(allergen))) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+};
 
   const addIngredient = () => {
     if (ingredientInput.trim() && !ingredients.includes(ingredientInput.trim())) {
@@ -56,12 +117,16 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients }) => {
                 }
               }
             );
-            return {
-              ...recipe,
-              extendedIngredients: detailResponse.data.extendedIngredients || [],
-              instructions: detailResponse.data.instructions,
-              readyInMinutes: detailResponse.data.readyInMinutes
-            };
+          return {
+          ...recipe,
+          extendedIngredients: detailResponse.data.extendedIngredients || [],
+          instructions: detailResponse.data.instructions,
+          readyInMinutes: detailResponse.data.readyInMinutes,
+          vegetarian: detailResponse.data.vegetarian,
+          vegan: detailResponse.data.vegan,
+          glutenFree: detailResponse.data.glutenFree,
+          dairyFree: detailResponse.data.dairyFree
+          };
           } catch (error) {
             console.error(`Error fetching details for recipe ${recipe.id}:`, error);
             return {
@@ -74,7 +139,15 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients }) => {
         })
       );
       
-      setRecipes(detailedRecipes);
+
+      const filteredRecipes = filterRecipesByPreferences(detailedRecipes);
+setRecipes(filteredRecipes);
+
+if (filteredRecipes.length === 0 && detailedRecipes.length > 0) {
+  alert('No recipes found matching your dietary preferences and allergies. Try adjusting your preferences.');
+}
+
+
     } catch (error) {
       console.error('Error fetching recipes:', error);
       alert('Failed to fetch recipes. Please try again.');

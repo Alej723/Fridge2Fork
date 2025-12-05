@@ -1,12 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Profile.css';
 
+
 const Profile = ({ user, onLogout, onUpdatePreferences }) => {
-  const [preferences, setPreferences] = useState({
-    dietary: [],
-    allergies: [],
-    otherAllergies: ''
-  });
+  
+const [preferences, setPreferences] = useState({
+  dietary: [],
+  allergies: [],
+  otherAllergies: ''
+});
+
+const [loaded, setLoaded] = useState(false);
+
+  
+
+useEffect(() => {
+  if (!user?.email) return;
+
+  const saved = localStorage.getItem(`preferences_${user.email}`);
+  if (saved) {
+    setPreferences(JSON.parse(saved));
+  }
+
+  setLoaded(true);
+}, [user]);
+
+
+useEffect(() => {
+  if (!user?.email || !loaded) return;
+
+  localStorage.setItem(
+    `preferences_${user.email}`,
+    JSON.stringify(preferences)
+  );
+}, [preferences, user, loaded]);
+
+
 
   const dietaryOptions = ['Vegetarian', 'Vegan', 'Halal', 'Kosher', 'Gluten-Free', 'Dairy-Free'];
   const allergyOptions = ['Nuts', 'Shellfish', 'Eggs', 'Soy', 'Wheat', 'Fish'];

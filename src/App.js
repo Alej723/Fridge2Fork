@@ -16,6 +16,11 @@ function App() {
   });
   const [addedToMealPlan, setAddedToMealPlan] = useState([]);
   const [userIngredients, setUserIngredients] = useState([]);
+  const [userPreferences, setUserPreferences] = useState({
+  dietary: [],
+  allergies: [],
+  otherAllergies: ''
+});
 
   const handleLogin = (userData) => {
     // In a real app, you'd verify credentials with a backend
@@ -31,10 +36,10 @@ function App() {
     setUser(null);
   };
 
-  const handleUpdatePreferences = (preferences) => {
-    // Save preferences (in real app, send to backend)
-    console.log('Saving preferences:', preferences);
-  };
+ const handleUpdatePreferences = (preferences) => {
+  setUserPreferences(preferences);
+  console.log('Saving preferences:', preferences);
+};
 
   const addRecipeToMealPlan = (recipe) => {
     if (!addedToMealPlan.find(r => r.id === recipe.id)) {
@@ -57,14 +62,15 @@ function App() {
             <Navigation />
             <main className="main-content">
               <Routes>
-                <Route path="/" element={
-                  <IngredientSearch 
-                    onAddToMealPlan={addRecipeToMealPlan}
-                    addedToMealPlan={addedToMealPlan}
-                    setAddedToMealPlan={setAddedToMealPlan}
-                    setUserIngredients={setUserIngredients}
-                  />
-                } />
+              <Route path="/" element={
+              <IngredientSearch 
+              onAddToMealPlan={addRecipeToMealPlan}
+              addedToMealPlan={addedToMealPlan}
+              setAddedToMealPlan={setAddedToMealPlan}
+              setUserIngredients={setUserIngredients}
+              userPreferences={userPreferences}
+              />
+              } />
                 <Route path="/planner" element={
                   <MealPlanner 
                     mealPlan={mealPlan} 
