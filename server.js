@@ -254,9 +254,9 @@ app.put('/api/users/:userId/ingredients', (req, res) => {
 // Start server
 const PORT = 5001;
 app.listen(PORT, () => {
-  console.log(`🚀 Fridge2Fork Backend running on http://localhost:${PORT}`);
-  console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
-  console.log(`👤 Register: POST http://localhost:${PORT}/api/register`);
-  console.log(`🔐 Login: POST http://localhost:${PORT}/api/login`);
-  console.log(`📊 In-memory storage active - data persists while server runs`);
+  console.log(`Fridge2Fork Backend running on http://localhost:${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`Register: POST http://localhost:${PORT}/api/register`);
+  console.log(`Login: POST http://localhost:${PORT}/api/login`);
+  console.log(`In-memory storage active - data persists while server runs`);
 });
