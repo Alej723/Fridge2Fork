@@ -23,12 +23,12 @@ function App() {
 });
 
   const handleLogin = (userData) => {
-    // In a real app, you'd verify credentials with a backend
+    // normally, should verify credentials with a backend, but for now:
     setUser({ email: userData.email, name: userData.name });
   };
 
   const handleSignup = (userData) => {
-    // In a real app, you'd create a new user account
+    // normally, should create a new user account but for now:
     setUser({ email: userData.email, name: userData.name });
   };
 
