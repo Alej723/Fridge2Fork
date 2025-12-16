@@ -4,6 +4,7 @@ import './MealPlanner.css';
 const MealPlanner = ({ mealPlan, onUpdateMealPlan, addedToMealPlan }) => {
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   const [draggedRecipe, setDraggedRecipe] = useState(null);
+  const [showDropdownForDay, setShowDropdownForDay] = useState(null);
 
   const handleDragStart = (recipe) => {
     setDraggedRecipe(recipe);
@@ -17,7 +18,7 @@ const MealPlanner = ({ mealPlan, onUpdateMealPlan, addedToMealPlan }) => {
     if (draggedRecipe) {
       onUpdateMealPlan(prev => ({
         ...prev,
-        [day]: [...prev[day], { ...draggedRecipe, id: Date.now() }] // Unique ID
+        [day]: [...prev[day], { ...draggedRecipe, id: Date.now() }]
       }));
       setDraggedRecipe(null);
     }
@@ -37,6 +38,22 @@ const MealPlanner = ({ mealPlan, onUpdateMealPlan, addedToMealPlan }) => {
     }));
   };
 
+  const addRecipeToDay = (day, recipe) => {
+    onUpdateMealPlan(prev => ({
+      ...prev,
+      [day]: [...prev[day], { ...recipe, id: Date.now() }]
+    }));
+    setShowDropdownForDay(null); // Close dropdown after adding
+  };
+
+  const toggleDropdown = (day) => {
+    if (addedToMealPlan.length === 0) {
+      alert('No recipes available. Go to Search to add recipes first!');
+      return;
+    }
+    setShowDropdownForDay(showDropdownForDay === day ? null : day);
+  };
+
   return (
     <div className="meal-planner">
       <h2>Weekly Meal Planner</h2>
@@ -50,12 +67,26 @@ const MealPlanner = ({ mealPlan, onUpdateMealPlan, addedToMealPlan }) => {
             {addedToMealPlan.map(recipe => (
               <div 
                 key={recipe.id} 
-                className="draggable-recipe"
+                className="draggable-recipe-card"
                 draggable
                 onDragStart={() => handleDragStart(recipe)}
               >
                 <img src={recipe.image} alt={recipe.title} />
-                <span>{recipe.title}</span>
+                <div className="recipe-info">
+                  <h4>{recipe.title}</h4>
+                  <div className="quick-add-buttons">
+                    {days.map(day => (
+                      <button 
+                        key={day}
+                        className="quick-add-btn"
+                        onClick={() => addRecipeToDay(day, recipe)}
+                        title={`Add to ${day}`}
+                      >
+                        {day.charAt(0).toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -75,11 +106,47 @@ const MealPlanner = ({ mealPlan, onUpdateMealPlan, addedToMealPlan }) => {
           >
             <div className="day-header">
               <h3>{day.charAt(0).toUpperCase() + day.slice(1)}</h3>
-              {mealPlan[day].length > 0 && (
-                <button className="clear-day" onClick={() => clearDay(day)}>
-                  Clear
-                </button>
-              )}
+              <div className="day-actions">
+                <div className="dropdown-container">
+                  <button 
+                    className="add-recipe-btn"
+                    onClick={() => toggleDropdown(day)}
+                    title="Add a recipe"
+                  >
+                    +
+                  </button>
+                  {showDropdownForDay === day && addedToMealPlan.length > 0 && (
+                    <div className="recipe-dropdown">
+                      <div className="dropdown-header">
+                        <span>Choose a recipe:</span>
+                        <button 
+                          className="close-dropdown"
+                          onClick={() => setShowDropdownForDay(null)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="dropdown-recipes">
+                        {addedToMealPlan.map(recipe => (
+                          <div 
+                            key={recipe.id}
+                            className="dropdown-recipe-item"
+                            onClick={() => addRecipeToDay(day, recipe)}
+                          >
+                            <img src={recipe.image} alt={recipe.title} />
+                            <span>{recipe.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {mealPlan[day].length > 0 && (
+                  <button className="clear-day" onClick={() => clearDay(day)}>
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
             <div className="meal-slot">
               {mealPlan[day].map((recipe, index) => (

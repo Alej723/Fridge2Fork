@@ -1,57 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import './Profile.css';
 
+const Profile = ({ user, onLogout, onUpdatePreferences, preferences }) => {
+  const [localPreferences, setLocalPreferences] = useState({
+    dietary: [],
+    allergies: [],
+    otherAllergies: ''
+  });
 
-const Profile = ({ user, onLogout, onUpdatePreferences }) => {
-  
-const [preferences, setPreferences] = useState({
-  dietary: [],
-  allergies: [],
-  otherAllergies: ''
-});
-
-const [loaded, setLoaded] = useState(false);
-
-  
-
-useEffect(() => {
-  if (!user?.email) return;
-
-  const saved = localStorage.getItem(`preferences_${user.email}`);
-  if (saved) {
-    setPreferences(JSON.parse(saved));
-  }
-
-  setLoaded(true);
-}, [user]);
-
-
-useEffect(() => {
-  if (!user?.email || !loaded) return;
-
-  localStorage.setItem(
-    `preferences_${user.email}`,
-    JSON.stringify(preferences)
-  );
-}, [preferences, user, loaded]);
-
-
+  // Sync with props when preferences change
+  useEffect(() => {
+    if (preferences && user?.email) {
+      setLocalPreferences({
+        dietary: preferences.dietary || [],
+        allergies: preferences.allergies || [],
+        otherAllergies: preferences.otherAllergies || ''
+      });
+    }
+  }, [preferences, user]);
 
   const dietaryOptions = ['Vegetarian', 'Vegan', 'Halal', 'Kosher', 'Gluten-Free', 'Dairy-Free'];
   const allergyOptions = ['Nuts', 'Shellfish', 'Eggs', 'Soy', 'Wheat', 'Fish'];
 
   const togglePreference = (type, value) => {
-    setPreferences(prev => ({
-      ...prev,
-      [type]: prev[type].includes(value) 
-        ? prev[type].filter(item => item !== value)
-        : [...prev[type], value]
-    }));
+    const updated = {
+      ...localPreferences,
+      [type]: localPreferences[type].includes(value) 
+        ? localPreferences[type].filter(item => item !== value)
+        : [...localPreferences[type], value]
+    };
+    setLocalPreferences(updated);
   };
 
   const handleSave = () => {
-    onUpdatePreferences(preferences);
-    alert('Preferences saved!');
+    onUpdatePreferences(localPreferences);
+    alert('Preferences saved! They will now filter your recipe search.');
   };
 
   return (
@@ -60,18 +43,20 @@ useEffect(() => {
         <h2>Account Settings</h2>
         <div className="user-info">
           <p><strong>Email:</strong> {user?.email}</p>
+          <p><strong>Name:</strong> {user?.name}</p>
           <button className="logout-btn" onClick={onLogout}>Sign Out</button>
         </div>
       </div>
       
       <div className="preference-section">
         <h3>Dietary Preferences</h3>
+        <p className="preference-help">Select your dietary preferences to filter recipe search results.</p>
         <div className="preference-grid">
           {dietaryOptions.map(option => (
             <label key={option} className="preference-item">
               <input
                 type="checkbox"
-                checked={preferences.dietary.includes(option)}
+                checked={localPreferences.dietary.includes(option)}
                 onChange={() => togglePreference('dietary', option)}
               />
               <span>{option}</span>
@@ -82,12 +67,13 @@ useEffect(() => {
 
       <div className="preference-section">
         <h3>Allergies</h3>
+        <p className="preference-help">Select allergies to exclude recipes containing these ingredients.</p>
         <div className="preference-grid">
           {allergyOptions.map(option => (
             <label key={option} className="preference-item">
               <input
                 type="checkbox"
-                checked={preferences.allergies.includes(option)}
+                checked={localPreferences.allergies.includes(option)}
                 onChange={() => togglePreference('allergies', option)}
               />
               <span>{option}</span>
@@ -95,13 +81,24 @@ useEffect(() => {
           ))}
         </div>
         <div className="other-allergies">
-          <label>Other Allergies:</label>
+          <label>Other Allergies (comma separated):</label>
           <input
             type="text"
-            placeholder="List any other allergies..."
-            value={preferences.otherAllergies}
-            onChange={(e) => setPreferences({...preferences, otherAllergies: e.target.value})}
+            placeholder="e.g., sesame, mushrooms, shellfish"
+            value={localPreferences.otherAllergies}
+            onChange={(e) => setLocalPreferences({...localPreferences, otherAllergies: e.target.value})}
           />
+        </div>
+      </div>
+
+      <div className="preference-section">
+        <h3>Current Preferences</h3>
+        <div className="current-preferences">
+          <p><strong>Dietary:</strong> {localPreferences.dietary.length > 0 ? localPreferences.dietary.join(', ') : 'None'}</p>
+          <p><strong>Allergies:</strong> {localPreferences.allergies.length > 0 ? localPreferences.allergies.join(', ') : 'None'}</p>
+          {localPreferences.otherAllergies && (
+            <p><strong>Other Allergies:</strong> {localPreferences.otherAllergies}</p>
+          )}
         </div>
       </div>
 
