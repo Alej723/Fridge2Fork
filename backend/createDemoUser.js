@@ -5,9 +5,21 @@ require('dotenv').config();
 
 const createDemoUserWithData = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    // Use environment variable (Railway will provide this)
+    const MONGODB_URI = process.env.MONGODB_URI;
+    
+    if (!MONGODB_URI) {
+      console.error('MONGODB_URI environment variable is not set!');
+      console.error('Please set it before running this script.');
+      console.error('Example: MONGODB_URI="connection_string" node createDemoUser.js');
+      process.exit(1);
+    }
+    
+    console.log('Connecting to MongoDB...');
+    await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
     
+    // [Rest of your existing code remains exactly the same...]
     // Check if demo user exists
     let demoUser = await User.findOne({ email: 'demo@fridge2fork.com' });
     
@@ -82,13 +94,21 @@ const createDemoUserWithData = async () => {
       console.log('Demo meal plan created in database');
     }
     
-    console.log('Demo setup complete!');
+    console.log('\nDemo setup complete!');
     console.log('Email: demo@fridge2fork.com');
     console.log('Password: demo123');
+    console.log('\nYou can now use these credentials to login.');
     
     await mongoose.disconnect();
+    console.log('Disconnected from MongoDB');
   } catch (error) {
-    console.error('Error creating demo data:', error);
+    console.error('Error creating demo data:', error.message);
+    if (error.message.includes('Authentication failed')) {
+      console.error('   This usually means:');
+      console.error('   1. Wrong MongoDB username/password');
+      console.error('   2. IP address not whitelisted in MongoDB Atlas');
+      console.error('   3. Database name incorrect');
+    }
     process.exit(1);
   }
 };

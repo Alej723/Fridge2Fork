@@ -1,4 +1,3 @@
-// mockRecipes.js
 const mockRecipes = [
   {
     id: 1,
