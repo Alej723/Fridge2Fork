@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import './IngredientSearch.css';
 
-// Mock recipes data
+// Mock recipes data (fallback)
 const mockRecipes = [
   {
     id: 1,
@@ -216,9 +215,7 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
   const [loading, setLoading] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [showRecipeDetail, setShowRecipeDetail] = useState(false);
-  const [usingMockData, setUsingMockData] = useState(false); // Track if we're using mock data
-
-  const API_KEY = '6be7bde14d4549439a1361a567311b2f';
+  const [usingMockData, setUsingMockData] = useState(false);
 
   const filterRecipesByPreferences = (recipesToFilter) => {
     if (!userPreferences || (userPreferences.dietary.length === 0 && userPreferences.allergies.length === 0 && !userPreferences.otherAllergies)) {
@@ -327,62 +324,63 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
     setLoading(true);
     
     try {
-      // First try to use the real API
-      const response = await axios.get(
-        `https://api.spoonacular.com/recipes/findByIngredients`,
-        {
-          params: {
-            ingredients: ingredients.join(','),
-            number: 6,
-            apiKey: API_KEY,
-            ranking: 2
-          }
-        }
-      );
+      // Try to use backend API first
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+      const token = localStorage.getItem('fridge2fork_token');
       
-      // Get detailed information for each recipe
-      const detailedRecipes = await Promise.all(
-        response.data.map(async (recipe) => {
-          try {
-            const detailResponse = await axios.get(
-              `https://api.spoonacular.com/recipes/${recipe.id}/information`,
-              {
-                params: {
-                  apiKey: API_KEY,
-                  includeNutrition: false
-                }
-              }
-            );
-            return {
-              ...recipe,
-              extendedIngredients: detailResponse.data.extendedIngredients || [],
-              instructions: detailResponse.data.instructions,
-              readyInMinutes: detailResponse.data.readyInMinutes,
-              vegetarian: detailResponse.data.vegetarian,
-              vegan: detailResponse.data.vegan,
-              glutenFree: detailResponse.data.glutenFree,
-              dairyFree: detailResponse.data.dairyFree
-            };
-          } catch (error) {
-            console.error('Error fetching recipe details:', error);
-            return recipe;
+      console.log('Searching with ingredients:', ingredients);
+      console.log('Using preferences:', userPreferences);
+      
+      const response = await fetch(`${apiUrl}/recipes/search`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          ingredients,
+          preferences: userPreferences || {
+            dietary: [],
+            allergies: [],
+            otherAllergies: ''
           }
         })
-      );
+      });
 
-      const filteredRecipes = filterRecipesByPreferences(detailedRecipes);
-      setRecipes(filteredRecipes);
-      setUsingMockData(false); // We're using real API data
-
-      if (filteredRecipes.length === 0 && detailedRecipes.length > 0) {
-        alert('No recipes found matching your dietary preferences and allergies. Try adjusting your preferences.');
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse JSON:', parseError);
+        throw new Error('Invalid response from server');
       }
 
-    } catch (error) {
-      console.error('Error fetching recipes:', error);
+      if (response.ok && data.success) {
+        console.log('Got recipes from backend:', data.recipes?.length || 0);
+        setRecipes(data.recipes || []);
+        setUsingMockData(!data.usingApi);
+        
+        if (data.message) {
+          console.log('Server message:', data.message);
+        }
+        
+        if ((data.recipes || []).length === 0) {
+          alert('No recipes found matching your ingredients and preferences.');
+        }
+      } else {
+        throw new Error(data.error || 'Failed to fetch recipes');
+      }
       
-      // If API fails (rate limit, network error, etc.), fall back to mock data
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate loading
+    } catch (error) {
+      console.error('Error fetching recipes from backend:', error);
+      
+      // Fallback to local mock data
+      console.log('Falling back to mock data...');
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       const userIngredientLower = ingredients.map(ing => ing.toLowerCase());
       
@@ -418,16 +416,11 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
       
       const filteredRecipes = filterRecipesByPreferences(sortedRecipes);
       setRecipes(filteredRecipes);
-      setUsingMockData(true); // We're using mock data
+      setUsingMockData(true);
       
-      // Show appropriate message
-      if (error.response?.status === 402) {
-        alert('API daily limit reached. Using demo recipes instead. Try again tomorrow for real recipes!');
-      } else if (error.response?.status === 401) {
-        alert('API key issue. Using demo recipes.');
-      } else if (error.response?.status === 429) {
-        alert('Too many requests. Using demo recipes. Please try again later.');
-      } else {
+      console.log('Using mock data, found:', filteredRecipes.length, 'recipes');
+      
+      if (error.message && !error.message.includes('Invalid response')) {
         alert('Using demo recipes. Check your connection for real recipes.');
       }
       
@@ -502,7 +495,7 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
             borderRadius: '4px',
             border: '1px solid #ffeaa7'
           }}>
-            <strong>⚠️ Demo Mode:</strong> Using sample recipes (API limit reached)
+            <strong>⚠️ Demo Mode:</strong> Using sample recipes
           </p>
         )}
       </div>
@@ -584,6 +577,7 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
                 <div 
                   key={recipe.id} 
                   className="recipe-card"
+                  style={{ position: 'relative' }}
                   onClick={() => showRecipeDetails(recipe)}
                 >
                   <div className="recipe-image">

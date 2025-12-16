@@ -6,6 +6,8 @@ const connectDB = require('./config/database');
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const recipeRoutes = require('./routes/recipes');
+const mealPlanRoutes = require('./routes/mealplans');
 
 // Initialize express
 const app = express();
@@ -18,7 +20,7 @@ app.use(cors({
   origin: 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -36,6 +38,8 @@ app.get('/api/health', (req, res) => {
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/recipes', recipeRoutes);
+app.use('/api/mealplans', mealPlanRoutes);
 
 // Test route
 app.get('/api/test', (req, res) => {

@@ -1,0 +1,50 @@
+.saved-weeks-page {
+  padding: 1rem;
+}
+
+.weeks-grid {
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding-bottom: 1rem;
+}
+
+.week-card {
+  min-width: 180px;
+  border-radius: 12px;
+  background: #fff0f5;
+  padding: 1rem;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.week-card:hover {
+  transform: translateY(-3px);
+}
+
+.week-name {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.week-recipes {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  margin-bottom: 0.5rem;
+}
+
+.recipe-thumb {
+  width: 30px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.week-count {
+  font-size: 0.8rem;
+  color: #555;
+}

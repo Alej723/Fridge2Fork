@@ -19,19 +19,77 @@
   color: white;
 }
 
-.logo {
-  font-size: 1.8rem;
+.nav-logo {
+  height: 32px;
+  width: 32px;
+  margin-right: 10px;
 }
 
 .brand-name {
   color: white;
 }
 
-.nav-links {
+/* Desktop Navigation */
+.nav-links-desktop {
   display: flex;
   gap: 1.5rem;
 }
 
+/* Mobile Navigation */
+.nav-links-mobile {
+  display: none;
+  position: fixed;
+  top: 70px;
+  left: 0;
+  right: 0;
+  background: #000000;
+  flex-direction: column;
+  gap: 0;
+  z-index: 1001;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.nav-links-mobile.open {
+  display: flex;
+  max-height: 400px;
+}
+
+.nav-links-mobile .nav-link {
+  padding: 1.2rem 2rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0;
+  text-align: left;
+}
+
+.nav-links-mobile .nav-link:last-child {
+  border-bottom: none;
+}
+
+.nav-links-mobile .nav-link:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* Hamburger Menu Button */
+.hamburger-menu {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.hamburger-menu:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* Navigation Link Styles */
 .nav-link {
   padding: 0.75rem 1.5rem;
   text-decoration: none;
@@ -44,6 +102,7 @@
 
 .nav-link:hover {
   background: rgba(255,255,255,0.2);
+  transform: translateY(-1px);
 }
 
 .nav-link.active {
@@ -51,8 +110,77 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
-.nav-logo {
-  height: 32px;
-  width: 32px;
-  margin-right: 10px;
+/* Menu Overlay */
+.menu-overlay {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .navigation {
+    padding: 1rem 1.5rem;
+  }
+  
+  .nav-links-desktop {
+    gap: 1rem;
+  }
+  
+  .nav-link {
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-links-desktop {
+    display: none;
+  }
+  
+  .hamburger-menu {
+    display: block;
+  }
+  
+  .nav-brand {
+    font-size: 1.3rem;
+  }
+  
+  .navigation {
+    padding: 0.8rem 1rem;
+  }
+  
+  .nav-logo {
+    height: 28px;
+    width: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-name {
+    font-size: 1.2rem;
+  }
+  
+  .nav-brand {
+    gap: 0.3rem;
+  }
+  
+  .hamburger-menu {
+    font-size: 1.5rem;
+    padding: 0.4rem;
+  }
+}
+
+/* Animation for hamburger icon */
+.hamburger-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.hamburger-menu:hover .hamburger-icon {
+  transform: scale(1.1);
 }
