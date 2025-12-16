@@ -40,6 +40,14 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+// Handle preflight OPTIONS requests for all routes
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'https://fridge2fork-frontend.onrender.com');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // Health check
