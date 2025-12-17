@@ -1,6 +1,6 @@
 # Fridge2Fork - Smart Meal Planning from Fridge to Fork
 
-> **Reduce food waste, save time, and eat better with AI-powered meal planning**
+> **Reduce food waste, save time, and eat better with meal planning powered by Spoonacular**
 
 ## Table of Contents
 - [Overview](#overview)
