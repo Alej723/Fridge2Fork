@@ -4,12 +4,13 @@ const app = require('./src/app');
 const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n=== FRIDGE2FORK BACKEND ===`);
+  console.log(`\nFRIDGE2FORK BACKEND`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
   console.log(`Listening on: http://localhost:${PORT}`);
+  console.log(`CORS Origin: ${process.env.CORS_ORIGIN || 'Not set'}`);
   console.log(`API Health: http://localhost:${PORT}/api/health`);
   console.log(`API Status: http://localhost:${PORT}/api/status`);
-  console.log(`===========================\n`);
+  console.log(`CORS Test: http://localhost:${PORT}/api/test-cors`);
   
   // Log API key status
   const apiKey = process.env.SPOONACULAR_API_KEY;
