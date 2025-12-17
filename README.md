@@ -244,7 +244,7 @@ User settings and preferences:
 2. Set environment variables
 3. Deploy with `npm start`
 
-### Frontend (Render/Netlify)
+### Frontend (Render)
 1. Build with `npm run build`
 2. Deploy static files
 3. Set environment variables
