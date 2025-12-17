@@ -21,6 +21,55 @@
   color: #666;
 }
 
+.api-message {
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.api-message.info {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border-left: 4px solid #2196f3;
+}
+
+.api-message.warning {
+  background-color: #fff3e0;
+  color: #e65100;
+  border-left: 4px solid #ff9800;
+}
+
+.demo-notice {
+  color: #d84315;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #ffecb3;
+  border-radius: 4px;
+  border: 1px solid #ffb300;
+}
+
+.demo-badge {
+  font-size: 0.8rem;
+  color: #d84315;
+  margin-left: 10px;
+  background: #ffecb3;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.real-badge {
+  font-size: 0.8rem;
+  color: #2e7d32;
+  margin-left: 10px;
+  background: #e8f5e9;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
 .input-section {
   background: white;
   padding: 2rem;
@@ -51,6 +100,11 @@
   box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
 }
 
+.ingredient-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .add-button {
   padding: 1rem 2rem;
   background: #000000;
@@ -65,6 +119,11 @@
 .add-button:hover {
   background: #333333;
   transform: translateY(-1px);
+}
+
+.add-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .search-button {
@@ -90,6 +149,7 @@
   background: #cbd5e0;
   cursor: not-allowed;
   transform: none;
+  opacity: 0.6;
 }
 
 .ingredients-grid-section {
@@ -125,6 +185,11 @@
   border-color: #000000;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.ingredient-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .ingredient-name {
@@ -198,6 +263,7 @@
   color: white;
   border-color: #000000;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .recipe-results-section {
@@ -223,7 +289,7 @@
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid #e2e8f0;
   cursor: pointer;
 }
@@ -304,45 +370,68 @@
 }
 
 .ingredient-tag {
+  display: inline-block;
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 500;
+  border: 1px solid transparent;
 }
 
 .ingredient-tag.has {
-  background: #c6f6d5;
-  color: #22543d;
-  border: 1px solid #9ae6b4;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #a5d6a7;
 }
 
 .ingredient-tag.needs {
-  background: #fed7d7;
-  color: #742a2a;
-  border: 1px solid #feb2b2;
+  background: #ffebee;
+  color: #c62828;
+  border-color: #ef9a9a;
 }
 
 .ingredient-more {
   font-size: 0.8rem;
   color: #718096;
   font-style: italic;
+  margin-left: 5px;
+}
+
+.recipe-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .add-to-planner {
-  width: 100%;
-  padding: 0.75rem;
-  background: #000000;
+  flex: 1;
+  padding: 8px 12px;
+  background: #000;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  font-weight: 500;
+  transition: background 0.2s ease;
 }
 
 .add-to-planner:hover {
-  background: #333333;
-  transform: translateY(-1px);
+  background: #333;
+}
+
+.remove-from-search-btn {
+  padding: 8px 12px;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.remove-from-search-btn:hover {
+  background: #ff5252;
 }
 
 /* Recipe Modal Styles */
@@ -447,23 +536,45 @@
   margin-bottom: 0.5rem;
 }
 
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+
 .add-to-planner-large {
-  width: 100%;
-  padding: 1rem;
-  background: #000000;
+  flex: 2;
+  padding: 12px 24px;
+  background: #000;
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 1rem;
 }
 
 .add-to-planner-large:hover {
   background: #333333;
   transform: translateY(-1px);
+}
+
+.close-modal-btn {
+  flex: 1;
+  padding: 12px 24px;
+  background: #666;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+  background: #555;
 }
 
 /* Responsive */
@@ -495,5 +606,14 @@
   .modal-content {
     padding: 1.5rem;
     margin: 1rem;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+  
+  .add-to-planner-large,
+  .close-modal-btn {
+    width: 100%;
   }
 }

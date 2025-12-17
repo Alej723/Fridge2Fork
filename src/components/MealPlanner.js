@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './MealPlanner.css';
 
-const MealPlanner = ({ mealPlan, onUpdateMealPlan, addedToMealPlan }) => {
+const MealPlanner = ({ mealPlan, onUpdateMealPlan, addedToMealPlan, onRemoveFromBank }) => {
   const days = [
     { key: 'sunday', label: 'Sunday' },
     { key: 'monday', label: 'Monday' },
@@ -58,6 +58,22 @@ const MealPlanner = ({ mealPlan, onUpdateMealPlan, addedToMealPlan }) => {
       return;
     }
     setShowDropdownForDay(showDropdownForDay === dayKey ? null : dayKey);
+  };
+
+  // Remove recipe from the available recipes (word bank)
+  const removeFromAvailableRecipes = (recipeId, event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    
+    if (window.confirm('Remove this recipe from your available recipes?')) {
+      // Call the parent function to remove the recipe
+      if (onRemoveFromBank) {
+        onRemoveFromBank(recipeId);
+      } else {
+        console.error('onRemoveFromBank prop not provided!');
+        alert('Error: Delete functionality not properly configured.');
+      }
+    }
   };
 
   const saveCurrentWeek = async () => {
@@ -122,6 +138,15 @@ const MealPlanner = ({ mealPlan, onUpdateMealPlan, addedToMealPlan }) => {
                 draggable
                 onDragStart={() => handleDragStart(recipe)}
               >
+                {/* Delete button for available recipes */}
+                <button 
+                  className="delete-from-bank-btn"
+                  onClick={(e) => removeFromAvailableRecipes(recipe.id, e)}
+                  title="Remove from available recipes"
+                >
+                  ×
+                </button>
+                
                 <img src={recipe.image} alt={recipe.title} />
                 <div className="recipe-info">
                   <h4>{recipe.title}</h4>

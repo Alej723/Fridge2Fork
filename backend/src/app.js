@@ -15,41 +15,22 @@ const app = express();
 // Connect to database
 connectDB();
 
-// Dynamic CORS configuration for production
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Get allowed origins from environment variable (Railway) or use defaults
-    const allowedOrigins = process.env.CORS_ORIGIN 
-      ? process.env.CORS_ORIGIN.split(',')
-      : ['http://localhost:3000']; // Fallback for local dev
-    
-    // Check if the requesting origin is allowed
-    if (allowedOrigins.includes(origin) || origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      callback(null, true);
-    } else {
-      console.log('CORS blocked for origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+// Middleware
+app.use(cors({
+  origin: 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
-};
-
-app.use(cors(corsOptions));
-// Handle preflight OPTIONS requests for all routes
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'https://fridge2fork-frontend.onrender.com');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.status(200).end();
-});
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
@@ -60,29 +41,41 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// API status test
+app.get('/api/status', (req, res) => {
+  const apiKey = process.env.SPOONACULAR_API_KEY;
+  res.json({
+    backend: 'running',
+    database: 'connected',
+    spoonacularApi: apiKey ? 'configured' : 'missing',
+    apiKeyLength: apiKey ? apiKey.length : 0
+  });
+});
+
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/mealplans', mealPlanRoutes);
 
-// Test route
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API is working!' });
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err.message);
+  console.error('Stack:', err.stack);
+  
   res.status(500).json({ 
-    error: 'Something went wrong!',
+    success: false,
+    error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ 
+    success: false,
+    error: 'Route not found' 
+  });
 });
 
 module.exports = app;

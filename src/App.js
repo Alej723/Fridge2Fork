@@ -143,6 +143,18 @@ function App() {
     otherAllergies: ''
   });
 
+  // Toast notifications state
+  const [toasts, setToasts] = useState([]);
+
+  // Helper function to add toast
+  const addToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 3000);
+  };
+
   // Check authentication on initial load
   useEffect(() => {
     const runSmokeTest = async () => {
@@ -288,17 +300,6 @@ function App() {
       }
     }
   };
-  
-  const [toasts, setToasts] = useState([]);
-
-  // Helper function to add toast
-  const addToast = (message, type = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, 3000);
-  };
 
   const loadUserDataFromBackend = async () => {
     try {
@@ -367,17 +368,62 @@ function App() {
     }
   };
 
-
   // Add recipe and save to localStorage
   const addRecipeToMealPlan = (recipe) => {
     console.log('Adding recipe to meal plan:', recipe.title);
-    if (!userAddedRecipes.find(r => r.id === recipe.id)) {
+    
+    // Check if recipe already exists (by title, not just id)
+    const recipeExists = userAddedRecipes.some(r => 
+      r.title.toLowerCase() === recipe.title.toLowerCase()
+    );
+    
+    if (!recipeExists) {
       const newRecipes = [...userAddedRecipes, recipe];
       setUserAddedRecipes(newRecipes);
       if (user?.email) {
         safeSetLocalStorage(`addedRecipes_${user.email}`, newRecipes);
       }
       addToast(`"${recipe.title}" added to meal plan!`, 'success');
+    } else {
+      addToast(`"${recipe.title}" is already in your meal plan`, 'info');
+    }
+  };
+
+  // Remove recipe from the available recipes bank
+  const removeRecipeFromBank = (recipeId) => {
+    console.log('Removing recipe from bank:', recipeId);
+    
+    if (user?.email) {
+      // Filter out the recipe by ID (handle both string and number IDs)
+      const newRecipes = userAddedRecipes.filter(recipe => {
+        return String(recipe.id) !== String(recipeId);
+      });
+      
+      setUserAddedRecipes(newRecipes);
+      
+      // Save to localStorage
+      safeSetLocalStorage(`addedRecipes_${user.email}`, newRecipes);
+      
+      // Show confirmation
+      addToast('Recipe removed from your available recipes', 'info');
+      
+      // Optionally sync with backend if you implement this endpoint
+      /*
+      try {
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+        const token = localStorage.getItem('fridge2fork_token');
+        
+        // If you want to implement backend persistence:
+        // await apiRequest('/recipes/remove-from-bank', {
+        //   method: 'DELETE',
+        //   body: JSON.stringify({ recipeId })
+        // });
+        
+        console.log('Recipe removed locally');
+      } catch (error) {
+        console.error('Failed to sync removal with backend:', error);
+      }
+      */
     }
   };
 
@@ -452,7 +498,6 @@ function App() {
                   <IngredientSearch 
                     onAddToMealPlan={addRecipeToMealPlan}
                     addedToMealPlan={userAddedRecipes}
-                    setAddedToMealPlan={setUserAddedRecipes}
                     setUserIngredients={updateUserIngredients}
                     userPreferences={userPreferences}
                   />
@@ -462,6 +507,7 @@ function App() {
                     mealPlan={userMealPlan} 
                     onUpdateMealPlan={updateMealPlan}
                     addedToMealPlan={userAddedRecipes}
+                    onRemoveFromBank={removeRecipeFromBank}
                   />
                 } />
                 <Route path="/saved-weeks" element={<SavedWeeks />} />

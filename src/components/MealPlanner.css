@@ -74,6 +74,36 @@
   background: #333333;
 }
 
+.delete-from-bank-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.draggable-recipe-card:hover .delete-from-bank-btn {
+  opacity: 1;
+}
+
+.delete-from-bank-btn:hover {
+  background: #ff5252;
+  transform: scale(1.1);
+}
+
 .no-recipes {
   text-align: center;
   color: #718096;
@@ -311,4 +341,51 @@
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-box-orient: vertical;
+}
+
+.draggable-recipe-card {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 2px solid #e2e8f0;
+  transition: all 0.2s ease;
+  cursor: grab;
+}
+
+.draggable-recipe-card:hover {
+  border-color: #000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.delete-from-bank-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.draggable-recipe-card:hover .delete-from-bank-btn {
+  opacity: 1;
+}
+
+.delete-from-bank-btn:hover {
+  background: #ff5252;
+  transform: scale(1.1);
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './IngredientSearch.css';
 
 // Mock recipes data (fallback)
@@ -166,7 +166,7 @@ const mockRecipes = [
   },
   {
     id: 9,
-    title: "Falafel Wrap (Halal & Vegan)",
+    title: "Falafel Wrap (Vegan, Halal)",
     image: "https://spoonacular.com/recipeImages/9-312x231.jpg",
     readyInMinutes: 25,
     vegetarian: true,
@@ -208,14 +208,36 @@ const mockRecipes = [
   }
 ];
 
-const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences }) => {
+const IngredientSearch = ({ onAddToMealPlan, addedToMealPlan, setUserIngredients, userPreferences }) => {
   const [ingredientInput, setIngredientInput] = useState('');
   const [ingredients, setIngredients] = useState([]);
   const [recipes, setRecipes] = useState([]);
+  const [availableRecipes, setAvailableRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [showRecipeDetail, setShowRecipeDetail] = useState(false);
   const [usingMockData, setUsingMockData] = useState(false);
+  const [apiMessage, setApiMessage] = useState('');
+
+  // Filter out recipes already in meal plan
+  useEffect(() => {
+    if (recipes.length > 0) {
+      // Create a Set of recipe titles already in meal plan for fast lookup
+      const addedTitles = new Set();
+      addedToMealPlan.forEach(recipe => {
+        addedTitles.add(recipe.title.toLowerCase());
+      });
+      
+      // Filter recipes to only show those not already in meal plan
+      const filtered = recipes.filter(recipe => 
+        !addedTitles.has(recipe.title.toLowerCase())
+      );
+      
+      setAvailableRecipes(filtered);
+    } else {
+      setAvailableRecipes([]);
+    }
+  }, [recipes, addedToMealPlan]);
 
   const filterRecipesByPreferences = (recipesToFilter) => {
     if (!userPreferences || (userPreferences.dietary.length === 0 && userPreferences.allergies.length === 0 && !userPreferences.otherAllergies)) {
@@ -239,7 +261,7 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
 
       // Check for Halal (no pork, alcohol)
       if (userPreferences.dietary.includes('Halal')) {
-        const nonHalalKeywords = ['pork', 'bacon', 'ham', 'gelatin', 'alcohol', 'wine', 'beer', 'lard'];
+        const nonHalalKeywords = ['pork', 'bacon', 'ham', 'gelatin', 'alcohol', 'wine', 'beer', 'lard', 'rum', 'whiskey', 'vodka'];
         const recipeText = (recipe.title + ' ' + recipe.extendedIngredients?.map(ing => ing.name).join(' ')).toLowerCase();
         
         if (nonHalalKeywords.some(keyword => recipeText.includes(keyword))) {
@@ -250,6 +272,13 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
       // Check for Kosher (no pork, shellfish mixing meat/dairy)
       if (userPreferences.dietary.includes('Kosher')) {
         const nonKosherKeywords = ['pork', 'shellfish', 'shrimp', 'crab', 'lobster'];
+        const recipeText = (recipe.title + ' ' + recipe.extendedIngredients?.map(ing => ing.name).join(' ')).toLowerCase();
+        
+        if (nonKosherKeywords.some(keyword => recipeText.includes(keyword))) {
+          return false;
+        }
+        
+        // Check for mixing meat and dairy
         const hasMeat = ['beef', 'chicken', 'lamb', 'meat'].some(meat => 
           recipe.extendedIngredients?.some(ing => ing.name.toLowerCase().includes(meat))
         );
@@ -257,9 +286,7 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
           recipe.extendedIngredients?.some(ing => ing.name.toLowerCase().includes(dairy))
         );
         
-        const recipeText = (recipe.title + ' ' + recipe.extendedIngredients?.map(ing => ing.name).join(' ')).toLowerCase();
-        
-        if (nonKosherKeywords.some(keyword => recipeText.includes(keyword)) || (hasMeat && hasDairy)) {
+        if (hasMeat && hasDairy) {
           return false;
         }
       }
@@ -322,14 +349,13 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
     if (ingredients.length === 0) return;
     
     setLoading(true);
+    setApiMessage('');
     
     try {
-      // Try to use backend API first
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
       const token = localStorage.getItem('fridge2fork_token');
       
       console.log('Searching with ingredients:', ingredients);
-      console.log('Using preferences:', userPreferences);
       
       const response = await fetch(`${apiUrl}/recipes/search`, {
         method: 'POST',
@@ -348,85 +374,40 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
         })
       });
 
-      const responseText = await response.text();
-      console.log('Raw response:', responseText);
+      const data = await response.json();
       
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('Failed to parse JSON:', parseError);
-        throw new Error('Invalid response from server');
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch recipes');
       }
 
-      if (response.ok && data.success) {
-        console.log('Got recipes from backend:', data.recipes?.length || 0);
+      if (data.success) {
+        console.log(`Got ${data.recipes?.length || 0} recipes`);
         setRecipes(data.recipes || []);
         setUsingMockData(!data.usingApi);
         
+        // Store API message if provided
         if (data.message) {
-          console.log('Server message:', data.message);
+          setApiMessage(data.message);
+          
+          // Show alert for important messages
+          if (data.message.includes('API daily limit') || data.message.includes('sample recipes')) {
+            setTimeout(() => {
+              alert(`Note: ${data.message}`);
+            }, 300);
+          }
         }
         
-        if ((data.recipes || []).length === 0) {
-          alert('No recipes found matching your ingredients and preferences.');
+        if (data.recipes?.length === 0) {
+          setApiMessage('No recipes found with these ingredients and preferences. Try adding more ingredients!');
         }
       } else {
-        throw new Error(data.error || 'Failed to fetch recipes');
+        throw new Error(data.error || 'Search failed');
       }
       
     } catch (error) {
-      console.error('Error fetching recipes from backend:', error);
-      
-      // Fallback to local mock data
-      console.log('Falling back to mock data...');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const userIngredientLower = ingredients.map(ing => ing.toLowerCase());
-      
-      // Calculate matching mock recipes
-      const matchedRecipes = mockRecipes.map(recipe => {
-        const hasIngredients = recipe.extendedIngredients.filter(ing => 
-          userIngredientLower.some(userIng => 
-            ing.name.toLowerCase().includes(userIng) || 
-            userIng.includes(ing.name.toLowerCase())
-          )
-        );
-        
-        const missingIngredients = recipe.extendedIngredients.filter(ing => 
-          !userIngredientLower.some(userIng => 
-            ing.name.toLowerCase().includes(userIng) || 
-            userIng.includes(ing.name.toLowerCase())
-          )
-        );
-        
-        return {
-          ...recipe,
-          usedIngredientCount: hasIngredients.length,
-          missedIngredientCount: missingIngredients.length,
-          hasIngredients,
-          missingIngredients
-        };
-      });
-      
-      // Sort by most matching ingredients first
-      const sortedRecipes = matchedRecipes
-        .sort((a, b) => b.usedIngredientCount - a.usedIngredientCount)
-        .slice(0, 6);
-      
-      const filteredRecipes = filterRecipesByPreferences(sortedRecipes);
-      setRecipes(filteredRecipes);
-      setUsingMockData(true);
-      
-      console.log('Using mock data, found:', filteredRecipes.length, 'recipes');
-      
-      if (error.message && !error.message.includes('Invalid response')) {
-        alert('Using demo recipes. Check your connection for real recipes.');
-      }
-      
-      if (filteredRecipes.length === 0) {
-        alert('No recipes found matching your ingredients and preferences.');
-      }
+      console.error('Error fetching recipes:', error);
+      setApiMessage(`Error: ${error.message}`);
+      setRecipes([]);
     }
     
     setLoading(false);
@@ -436,19 +417,19 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
   const analyzeIngredients = (recipe, userIngredients) => {
     const userIngredientLower = userIngredients.map(ing => ing.toLowerCase());
     
-    const hasIngredients = recipe.extendedIngredients.filter(ing => 
-      userIngredientLower.some(userIng => 
-        ing.name.toLowerCase().includes(userIng) || 
-        userIng.includes(ing.name.toLowerCase())
-      )
-    );
+    const hasIngredients = recipe.extendedIngredients.filter(ing => {
+      const ingName = ing.name.toLowerCase();
+      return userIngredientLower.some(userIng => 
+        ingName.includes(userIng) || userIng.includes(ingName)
+      );
+    });
     
-    const missingIngredients = recipe.extendedIngredients.filter(ing => 
-      !userIngredientLower.some(userIng => 
-        ing.name.toLowerCase().includes(userIng) || 
-        userIng.includes(ing.name.toLowerCase())
-      )
-    );
+    const missingIngredients = recipe.extendedIngredients.filter(ing => {
+      const ingName = ing.name.toLowerCase();
+      return !userIngredientLower.some(userIng => 
+        ingName.includes(userIng) || userIng.includes(ingName)
+      );
+    });
     
     return { hasIngredients, missingIngredients };
   };
@@ -471,8 +452,21 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
     event.stopPropagation();
     if (onAddToMealPlan) {
       onAddToMealPlan(recipe);
+      
+      // Remove from available recipes immediately
+      setAvailableRecipes(prev => 
+        prev.filter(r => r.id !== recipe.id)
+      );
+      
       alert(`"${recipe.title}" added to meal plan! Go to Planner to organize.`);
     }
+  };
+
+  const removeFromSearch = (recipeId, event) => {
+    event.stopPropagation();
+    setAvailableRecipes(prev => 
+      prev.filter(r => r.id !== recipeId)
+    );
   };
 
   const showRecipeDetails = (recipe) => {
@@ -485,17 +479,16 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
       <div className="search-header">
         <h1>What ingredients do you have?</h1>
         <p>Add ingredients from your fridge or pantry to find matching recipes</p>
+        
+        {apiMessage && (
+          <div className={`api-message ${usingMockData ? 'warning' : 'info'}`}>
+            {apiMessage}
+          </div>
+        )}
+        
         {usingMockData && (
-          <p className="demo-notice" style={{
-            color: '#666', 
-            fontSize: '0.9rem', 
-            marginTop: '0.5rem',
-            backgroundColor: '#fff3cd',
-            padding: '0.5rem',
-            borderRadius: '4px',
-            border: '1px solid #ffeaa7'
-          }}>
-            <strong>⚠️ Demo Mode:</strong> Using sample recipes
+          <p className="demo-notice">
+            <strong>⚠️ Demo Mode:</strong> Using sample recipes. Real API search resumes when quota resets (midnight UTC).
           </p>
         )}
       </div>
@@ -510,8 +503,13 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
             onChange={(e) => setIngredientInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && addIngredient()}
             className="ingredient-input"
+            disabled={loading}
           />
-          <button onClick={addIngredient} className="add-button">
+          <button 
+            onClick={addIngredient} 
+            className="add-button"
+            disabled={loading}
+          >
             Add
           </button>
         </div>
@@ -536,6 +534,7 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
                 <button 
                   onClick={() => removeIngredient(ingredient)}
                   className="remove-button"
+                  disabled={loading}
                 >
                   ×
                 </button>
@@ -554,7 +553,7 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
               key={index}
               onClick={() => addPopularIngredient(ingredient)}
               className="popular-ingredient"
-              disabled={ingredients.includes(ingredient)}
+              disabled={ingredients.includes(ingredient) || loading}
             >
               {ingredient}
             </button>
@@ -563,21 +562,22 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
       </div>
 
       {/* Recipe Results */}
-      {recipes.length > 0 && (
+      {availableRecipes.length > 0 && (
         <div className="recipe-results-section">
           <h3>
-            Found {recipes.length} Recipes 
-            {usingMockData && <span style={{fontSize: '0.8rem', color: '#666', marginLeft: '10px'}}>(Demo Data)</span>}
+            Found {availableRecipes.length} Recipes 
+            {usingMockData && <span className="demo-badge">(Demo Data)</span>}
+            {!usingMockData && <span className="real-badge">(Real API)</span>}
           </h3>
+          
           <div className="recipe-grid">
-            {recipes.map(recipe => {
+            {availableRecipes.map(recipe => {
               const { hasIngredients, missingIngredients } = analyzeIngredients(recipe, ingredients);
               
               return (
                 <div 
                   key={recipe.id} 
                   className="recipe-card"
-                  style={{ position: 'relative' }}
                   onClick={() => showRecipeDetails(recipe)}
                 >
                   <div className="recipe-image">
@@ -616,12 +616,22 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
                       </div>
                     </div>
                     
-                    <button 
-                      className="add-to-planner"
-                      onClick={(e) => addToMealPlan(recipe, e)}
-                    >
-                      Add to Meal Plan
-                    </button>
+                    <div className="recipe-actions">
+                      <button 
+                        className="add-to-planner"
+                        onClick={(e) => addToMealPlan(recipe, e)}
+                        disabled={loading}
+                      >
+                        Add to Meal Plan
+                      </button>
+                      <button 
+                        className="remove-from-search-btn"
+                        onClick={(e) => removeFromSearch(recipe.id, e)}
+                        title="Remove from search results"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -672,15 +682,23 @@ const IngredientSearch = ({ onAddToMealPlan, setUserIngredients, userPreferences
               )}
             </div>
             
-            <button 
-              className="add-to-planner-large" 
-              onClick={(e) => {
-                addToMealPlan(selectedRecipe, e);
-                setShowRecipeDetail(false);
-              }}
-            >
-              Add to Meal Plan
-            </button>
+            <div className="modal-actions">
+              <button 
+                className="add-to-planner-large" 
+                onClick={(e) => {
+                  addToMealPlan(selectedRecipe, e);
+                  setShowRecipeDetail(false);
+                }}
+              >
+                Add to Meal Plan
+              </button>
+              <button 
+                className="close-modal-btn"
+                onClick={() => setShowRecipeDetail(false)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
